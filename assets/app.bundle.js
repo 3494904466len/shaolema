@@ -147,6 +147,28 @@
     return document.querySelector(sel);
   }
 
+  function productEmoji(p) {
+    const id = String(p?.id || "");
+    const cat = String(p?.cat || "");
+    // 優先用具體商品類型，其次用分類
+    if (id.includes("robe") || id.includes("brocade")) return "🧥";
+    if (id.includes("shoes")) return "👞";
+    if (id.includes("feast")) return "🍱";
+    if (id.includes("tea")) return "🍵";
+    if (id.includes("incense")) return "🕯️";
+    if (id.includes("house")) return "🏠";
+    if (id.includes("furniture")) return "🛏️";
+    if (id.includes("bagua")) return "☯️";
+    if (id.includes("lantern")) return "🏮";
+    if (id.includes("carriage")) return "🧳";
+    if (id.includes("gold")) return "🪙";
+    if (cat === "衣") return "🧥";
+    if (cat === "食") return "🍱";
+    if (cat === "住") return "🏠";
+    if (cat === "行") return "🏮";
+    return "🧧";
+  }
+
   function readFileAsDataUrl(file) {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
@@ -388,6 +410,14 @@
     getOrCreateUser("旅者");
     renderRecommended();
 
+    // 生成「打開本網站」二維碼（使用公開 QR 服務）
+    const qr = qs("#shareQr");
+    if (qr) {
+      const url = String(location.href || "");
+      const data = encodeURIComponent(url);
+      qr.src = `https://api.qrserver.com/v1/create-qr-code/?size=360x360&margin=10&data=${data}`;
+    }
+
     const upload = qs("#uploadInput");
     if (upload) upload.addEventListener("change", handleUpload);
 
@@ -430,8 +460,9 @@
       for (const p of list) {
         const el = document.createElement("div");
         el.className = "item";
+        const emo = productEmoji(p);
         el.innerHTML = `
-          <div class="thumb" aria-hidden="true"></div>
+          <div class="thumb" aria-hidden="true"><span class="emoji">${emo}</span></div>
           <div style="flex:1">
             <h3>${p.name}</h3>
             <p>${p.desc}</p>
@@ -488,7 +519,8 @@
 
     if (!user.cart.length) {
       if (empty) empty.style.display = "block";
-      if (checkout) checkout.setAttribute("disabled", "disabled");
+      // 不強制加入購物籃：仍可前往結算上傳圖片焚化
+      if (checkout) checkout.removeAttribute("disabled");
       return;
     }
     if (empty) empty.style.display = "none";
@@ -497,8 +529,9 @@
     for (const it of user.cart) {
       const row = document.createElement("div");
       row.className = "item";
+      const emo = productEmoji(it);
       row.innerHTML = `
-        <div class="thumb" aria-hidden="true"></div>
+        <div class="thumb" aria-hidden="true"><span class="emoji">${emo}</span></div>
         <div style="flex:1">
           <h3>${it.name}</h3>
           <p>數量：${it.qty}</p>
@@ -561,8 +594,9 @@
     for (const it of user.cart) {
       const el = document.createElement("div");
       el.className = "item";
+      const emo = productEmoji(it);
       el.innerHTML = `
-        <div class="thumb" aria-hidden="true"></div>
+        <div class="thumb" aria-hidden="true"><span class="emoji">${emo}</span></div>
         <div style="flex:1">
           <h3>${it.name}</h3>
           <p>數量：${it.qty}</p>
@@ -610,7 +644,296 @@
       const el = qs("#burnBlessing");
       if (el) el.textContent = pick;
 
-      document.body.classList.add("burning");
+      const canvas = qs("#burnCanvas");
+
+      const playBurn = () => new Promise((resolve) => {
+        if (!canvas || !canvas.getContext) return resolve();
+        const ctx = canvas.getContext("2d");
+        if (!ctx) return resolve();
+
+        const dpr = Math.min(2, window.devicePixelRatio || 1);
+        const cssW = canvas.clientWidth || 420;
+        const cssH = canvas.clientHeight || 665;
+        canvas.width = Math.floor(cssW * dpr);
+        canvas.height = Math.floor(cssH * dpr);
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+        const W = cssW;
+        const H = cssH;
+        const paperW = Math.min(310, W * 0.82);
+        const paperH = Math.min(430, H * 0.78);
+        const paperX = (W - paperW) / 2;
+        const paperY = (H - paperH) / 2 + 10;
+
+        const rand = (a, b) => a + Math.random() * (b - a);
+        const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+
+        // 粒子
+        const particles = [];
+        const spawnParticles = (count, yLine) => {
+          for (let i = 0; i < count; i++) {
+            particles.push({
+              x: rand(paperX + 18, paperX + paperW - 18),
+              y: clamp(yLine + rand(-12, 12), paperY, paperY + paperH),
+              vx: rand(-18, 18),
+              vy: rand(-58, -22),
+              life: rand(0.7, 1.35),
+              t: 0,
+              r: rand(1.2, 2.4),
+              c: Math.random() < 0.5 ? "rgba(255,224,122,0.9)" : (Math.random() < 0.5 ? "rgba(255,122,217,0.8)" : "rgba(95,246,214,0.75)")
+            });
+          }
+        };
+
+        const draw = (tBurn, tDissolve) => {
+          ctx.clearRect(0, 0, W, H);
+
+          // 紙紮（清晰）
+          const g = ctx.createLinearGradient(0, paperY, 0, paperY + paperH);
+          g.addColorStop(0, "rgba(255, 236, 170, 0.96)");
+          g.addColorStop(1, "rgba(242, 196, 86, 0.92)");
+
+          ctx.save();
+          ctx.shadowColor = "rgba(0,0,0,0.55)";
+          ctx.shadowBlur = 26;
+          ctx.shadowOffsetY = 16;
+          ctx.fillStyle = g;
+          ctx.strokeStyle = "rgba(255,224,122,0.45)";
+          ctx.lineWidth = 1.5;
+          const r = 18;
+          ctx.beginPath();
+          ctx.moveTo(paperX + r, paperY);
+          ctx.arcTo(paperX + paperW, paperY, paperX + paperW, paperY + paperH, r);
+          ctx.arcTo(paperX + paperW, paperY + paperH, paperX, paperY + paperH, r);
+          ctx.arcTo(paperX, paperY + paperH, paperX, paperY, r);
+          ctx.arcTo(paperX, paperY, paperX + paperW, paperY, r);
+          ctx.closePath();
+          ctx.fill();
+          ctx.shadowBlur = 0;
+          ctx.stroke();
+          ctx.restore();
+
+          // 內部淡符紋
+          ctx.save();
+          ctx.globalAlpha = 0.10;
+          ctx.strokeStyle = "rgba(40,20,10,0.85)";
+          ctx.lineWidth = 5;
+          ctx.lineCap = "round";
+          ctx.beginPath();
+          ctx.moveTo(paperX + paperW * 0.5, paperY + 26);
+          ctx.lineTo(paperX + paperW * 0.5, paperY + paperH - 26);
+          ctx.moveTo(paperX + paperW * 0.28, paperY + paperH * 0.22);
+          ctx.quadraticCurveTo(paperX + paperW * 0.5, paperY + paperH * 0.16, paperX + paperW * 0.72, paperY + paperH * 0.22);
+          ctx.stroke();
+          ctx.restore();
+
+          // 焚燒線：從底往上
+          const burnY = paperY + paperH * (1 - tBurn);
+
+          // 把已焚燒部分「挖掉」
+          ctx.save();
+          ctx.globalCompositeOperation = "destination-out";
+          ctx.beginPath();
+          // jitter edge
+          const steps = 24;
+          ctx.moveTo(paperX - 10, paperY + paperH + 40);
+          ctx.lineTo(paperX - 10, burnY);
+          for (let i = 0; i <= steps; i++) {
+            const x = paperX + (paperW * i) / steps;
+            const y = burnY + Math.sin((i / steps) * Math.PI * 3 + tBurn * 10) * 6 + rand(-4, 4);
+            ctx.lineTo(x, y);
+          }
+          ctx.lineTo(paperX + paperW + 10, burnY);
+          ctx.lineTo(paperX + paperW + 10, paperY + paperH + 40);
+          ctx.closePath();
+          ctx.fill();
+          ctx.restore();
+
+          // 火焰（清晰：火舌輪廓 + 亮核 + 霓光外焰）
+          ctx.save();
+          ctx.globalCompositeOperation = "screen";
+
+          const baseX = W / 2;
+          const baseY = burnY + 42;
+          const flameW = paperW * 0.92;
+          const flameH = 220;
+
+          // 底部亮核（柔光，不是長方形）
+          const core = ctx.createRadialGradient(baseX, baseY, 8, baseX, baseY, flameW * 0.55);
+          core.addColorStop(0, "rgba(255,255,210,0.95)");
+          core.addColorStop(0.28, "rgba(255,224,122,0.92)");
+          core.addColorStop(0.55, "rgba(255,120,60,0.75)");
+          core.addColorStop(0.85, "rgba(255,55,55,0.18)");
+          core.addColorStop(1, "rgba(0,0,0,0)");
+          ctx.fillStyle = core;
+          ctx.beginPath();
+          ctx.ellipse(baseX, baseY - 18, flameW * 0.42, 70, 0, 0, Math.PI * 2);
+          ctx.fill();
+
+          // 火舌：多筆清晰輪廓，輕微擺動
+          const drawTongue = (i, x, w, h, sway, phase) => {
+            const y0 = baseY;
+            const yTop = y0 - h;
+            const tipX = x + Math.sin(phase) * sway;
+
+            const grad = ctx.createLinearGradient(x, yTop, x, y0);
+            grad.addColorStop(0, "rgba(255,245,170,0.92)");
+            grad.addColorStop(0.35, "rgba(255,224,122,0.88)");
+            grad.addColorStop(0.68, "rgba(255,120,60,0.78)");
+            grad.addColorStop(1, "rgba(255,55,55,0.10)");
+
+            ctx.fillStyle = grad;
+            ctx.strokeStyle = "rgba(255,224,122,0.35)";
+            ctx.lineWidth = 1.2;
+
+            ctx.beginPath();
+            ctx.moveTo(x - w * 0.55, y0);
+            ctx.bezierCurveTo(
+              x - w * 0.75, y0 - h * 0.28,
+              tipX - w * 0.30, y0 - h * 0.72,
+              tipX, yTop
+            );
+            ctx.bezierCurveTo(
+              tipX + w * 0.30, y0 - h * 0.72,
+              x + w * 0.75, y0 - h * 0.28,
+              x + w * 0.55, y0
+            );
+            ctx.closePath();
+            ctx.fill();
+            ctx.stroke();
+
+            // 內焰小舌（更亮）
+            const inner = ctx.createLinearGradient(x, yTop, x, y0);
+            inner.addColorStop(0, "rgba(255,255,235,0.85)");
+            inner.addColorStop(0.5, "rgba(255,224,122,0.78)");
+            inner.addColorStop(1, "rgba(255,120,60,0.05)");
+            ctx.fillStyle = inner;
+            ctx.beginPath();
+            ctx.moveTo(x - w * 0.26, y0);
+            ctx.quadraticCurveTo(tipX - w * 0.10, y0 - h * 0.55, tipX, yTop + h * 0.12);
+            ctx.quadraticCurveTo(tipX + w * 0.10, y0 - h * 0.55, x + w * 0.26, y0);
+            ctx.closePath();
+            ctx.fill();
+          };
+
+          const t = tBurn;
+          const wobble = 8 + Math.sin(t * 8) * 2;
+          const tongues = 4;
+          for (let i = 0; i < tongues; i++) {
+            const u = tongues === 1 ? 0 : i / (tongues - 1);
+            const x = baseX + (u - 0.5) * flameW * 0.55;
+            const w = 58 + (1 - Math.abs(u - 0.5) * 1.7) * 34;
+            const h = 120 + (1 - Math.abs(u - 0.5) * 1.4) * 86;
+            const phase = t * 12 + i * 1.7;
+            drawTongue(i, x, w, h, wobble + i * 1.5, phase);
+          }
+
+          // 外焰霓光（偏粉/青，貼合參考色調）
+          const neon = ctx.createRadialGradient(baseX, baseY - 40, 18, baseX, baseY - 40, flameW * 0.78);
+          neon.addColorStop(0, "rgba(255,122,217,0.16)");
+          neon.addColorStop(0.55, "rgba(95,246,214,0.10)");
+          neon.addColorStop(1, "rgba(0,0,0,0)");
+          ctx.fillStyle = neon;
+          ctx.beginPath();
+          ctx.ellipse(baseX, baseY - 58, flameW * 0.55, 130, 0, 0, Math.PI * 2);
+          ctx.fill();
+
+          ctx.restore();
+
+          // 粒子（燒盡後飄走）
+          ctx.save();
+          for (const p of particles) {
+            const a = 1 - (p.t / p.life);
+            if (a <= 0) continue;
+            ctx.globalAlpha = a;
+            ctx.fillStyle = p.c;
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+            ctx.fill();
+          }
+          ctx.restore();
+
+          // 消散（紙紮最後一點淡出）
+          if (tDissolve > 0) {
+            ctx.save();
+            ctx.globalAlpha = tDissolve * 0.55;
+            ctx.fillStyle = "rgba(0,0,0,1)";
+            ctx.globalCompositeOperation = "destination-out";
+            ctx.fillRect(paperX - 8, paperY - 8, paperW + 16, paperH + 16);
+            ctx.restore();
+          }
+        };
+
+        const BURN_MS = 2000;
+        // 燒完就馬上漸隱：縮短且更順
+        const DISSOLVE_MS = 520;
+        let last = performance.now();
+        let start = last;
+        let phase = "burn";
+
+        const tick = (now) => {
+          const dt = (now - last) / 1000;
+          last = now;
+
+          if (phase === "burn") {
+            const t = clamp((now - start) / BURN_MS, 0, 1);
+            const burnY = (canvas.clientHeight || 665) * 0; // unused, kept
+            // 沿焚燒線補一些火星（更多）
+            if (Math.random() < 0.92) {
+              const cssH2 = canvas.clientHeight || 665;
+              const cssW2 = canvas.clientWidth || 420;
+              const W2 = cssW2;
+              const H2 = cssH2;
+              const paperW2 = Math.min(310, W2 * 0.82);
+              const paperH2 = Math.min(430, H2 * 0.78);
+              const paperX2 = (W2 - paperW2) / 2;
+              const paperY2 = (H2 - paperH2) / 2 + 10;
+              const yLine = paperY2 + paperH2 * (1 - t);
+              spawnParticles(5, yLine);
+            }
+            // 更新粒子
+            for (const p of particles) {
+              p.t += dt;
+              p.x += p.vx * dt;
+              p.y += p.vy * dt;
+            }
+            draw(t, 0);
+            if (t >= 1) {
+              phase = "dissolve";
+              start = now;
+              // 燒盡瞬間多一點粒子
+              const cssH2 = canvas.clientHeight || 665;
+              const cssW2 = canvas.clientWidth || 420;
+              const paperW2 = Math.min(310, cssW2 * 0.82);
+              const paperH2 = Math.min(430, cssH2 * 0.78);
+              const paperX2 = (cssW2 - paperW2) / 2;
+              const paperY2 = (cssH2 - paperH2) / 2 + 10;
+              spawnParticles(48, paperY2 + paperH2 * 0.18);
+            }
+          } else {
+            // ease-out 讓最後不僵硬
+            const t0 = clamp((now - start) / DISSOLVE_MS, 0, 1);
+            const t = 1 - Math.pow(1 - t0, 3);
+            for (const p of particles) {
+              p.t += dt;
+              p.x += p.vx * dt;
+              p.y += p.vy * dt;
+            }
+            draw(1, t);
+            if (t >= 1) return resolve();
+          }
+          requestAnimationFrame(tick);
+        };
+
+        requestAnimationFrame(tick);
+      });
+
+      // 先播焚燒動畫（清晰畫面），再顯示祝福
+      document.body.classList.add("burning", "phase-burn");
+      await playBurn();
+      document.body.classList.remove("phase-burn");
+
+      // 祝福顯示/消散後再提交並跳轉
       setTimeout(() => {
         placeOrder({ note, uploadedImages: uploads });
         sessionStorage.removeItem("shaolema.pendingUpload");
@@ -686,64 +1009,183 @@
     }
   }
 
-  function renderStation(mode) {
+  function renderStation() {
     const { user } = requireUser();
     const root = qs("#gallery");
-    const title = qs("#stationTitle");
     const empty = qs("#empty");
-    if (!root || !title || !empty) return;
+    if (!root || !empty) return;
 
-    const items = [];
+    const entries = [];
     for (const o of user.orders) {
+      // 1) 圖片供品
       for (const img of o.images || []) {
-        items.push({
+        entries.push({
+          kind: "image",
           createdAt: o.createdAt,
           note: o.note,
           dataUrl: img.dataUrl,
           caption: img.caption || "供品"
         });
       }
+      // 2) 下單商品（不顯示金額，只顯示品項與數量）
+      for (const it of o.items || []) {
+        entries.push({
+          kind: "item",
+          createdAt: o.createdAt,
+          note: o.note,
+          id: it.id,
+          name: it.name,
+          qty: it.qty || 1
+        });
+      }
     }
 
-    const isPublic = mode === "public";
-    title.textContent = isPublic ? "冥界空間站（公開區）" : "冥界空間站（個人區）";
     root.innerHTML = "";
 
-    if (!items.length) {
+    if (!entries.length) {
       empty.style.display = "block";
       return;
     }
     empty.style.display = "none";
 
-    for (const it of items) {
+    for (const it of entries) {
       const tile = document.createElement("div");
       tile.className = "tile";
-      tile.innerHTML = `
-        <img src="${it.dataUrl}" alt="供品圖片" loading="lazy" />
-        <div class="cap">
-          <div style="font-weight:800; letter-spacing:.02em">${it.caption}</div>
-          <div class="muted" style="margin-top:4px">
-            ${formatTime(it.createdAt)}${it.note ? ` · ${it.note}` : ""}
+      if (it.kind === "image") {
+        tile.innerHTML = `
+          <img src="${it.dataUrl}" alt="供品圖片" loading="lazy" />
+          <div class="cap">
+            <div style="font-weight:800; letter-spacing:.02em">${it.caption}</div>
+            <div class="muted" style="margin-top:4px">
+              ${formatTime(it.createdAt)}${it.note ? ` · ${it.note}` : ""}
+            </div>
           </div>
-        </div>
-      `;
+        `;
+      } else {
+        const emo = productEmoji(it);
+        const qtyText = it.qty > 1 ? ` × ${it.qty}` : "";
+        tile.innerHTML = `
+          <div class="tile-emoji" aria-hidden="true"><span>${emo}</span></div>
+          <div class="cap">
+            <div style="font-weight:800; letter-spacing:.02em">${it.name}${qtyText}</div>
+            <div class="muted" style="margin-top:4px">${formatTime(it.createdAt)}${it.note ? ` · ${it.note}` : ""}</div>
+          </div>
+        `;
+      }
       root.appendChild(tile);
     }
   }
 
   function bootStation() {
-    const mode = location.hash === "#public" ? "public" : "personal";
-    renderStation(mode);
-    const personalBtn = qs("#tabPersonal");
-    const publicBtn = qs("#tabPublic");
-    if (personalBtn) personalBtn.addEventListener("click", () => {
-      history.replaceState(null, "", "station.html");
-      renderStation("personal");
+    renderStation();
+
+    const del = qs("#deleteOfferings");
+    const modal = qs("#deleteModal");
+    const closeBtn = qs("#deleteClose");
+    const listRoot = qs("#deleteList");
+    const btnAll = qs("#deleteSelectAll");
+    const btnNone = qs("#deleteSelectNone");
+    const btnConfirm = qs("#deleteConfirm");
+
+    const openModal = () => {
+      if (!modal || !listRoot) return;
+      const { user } = requireUser();
+      const rows = [];
+      for (const o of user.orders) {
+        const ts = formatTime(o.createdAt);
+        for (const img of o.images || []) {
+          const key = `${o.id}::img::${img.id || "img"}`;
+          rows.push({
+            key,
+            kind: "image",
+            title: img.caption || "供品圖片",
+            subtitle: ts + (o.note ? ` · ${o.note}` : ""),
+            dataUrl: img.dataUrl
+          });
+        }
+        for (const it of o.items || []) {
+          const key = `${o.id}::item::${it.id || "item"}`;
+          const qtyText = (it.qty || 1) > 1 ? ` × ${it.qty}` : "";
+          rows.push({
+            key,
+            kind: "item",
+            title: `${it.name}${qtyText}`,
+            subtitle: ts + (o.note ? ` · ${o.note}` : ""),
+            emoji: productEmoji(it)
+          });
+        }
+      }
+
+      listRoot.innerHTML = "";
+      if (!rows.length) {
+        listRoot.innerHTML = `<div class="empty">目前沒有可刪除的供品。</div>`;
+      } else {
+        for (const r of rows) {
+          const div = document.createElement("label");
+          div.className = "delete-item";
+          div.innerHTML = `
+            <input type="checkbox" data-key="${r.key}" />
+            <div class="delete-thumb" aria-hidden="true">
+              ${r.kind === "image" ? `<img src="${r.dataUrl}" alt="" />` : `<span class="emoji">${r.emoji || "🧧"}</span>`}
+            </div>
+            <div class="delete-meta">
+              <div class="t">${r.title}</div>
+              <div class="s">${r.subtitle}</div>
+            </div>
+          `;
+          listRoot.appendChild(div);
+        }
+      }
+
+      document.body.classList.add("modal-open");
+      modal.setAttribute("aria-hidden", "false");
+    };
+
+    const closeModal = () => {
+      if (!modal) return;
+      document.body.classList.remove("modal-open");
+      modal.setAttribute("aria-hidden", "true");
+    };
+
+    if (del) del.addEventListener("click", openModal);
+    if (closeBtn) closeBtn.addEventListener("click", closeModal);
+    if (modal) modal.addEventListener("click", (e) => {
+      if (e.target === modal) closeModal();
     });
-    if (publicBtn) publicBtn.addEventListener("click", () => {
-      history.replaceState(null, "", "station.html#public");
-      renderStation("public");
+
+    if (btnAll) btnAll.addEventListener("click", () => {
+      for (const cb of document.querySelectorAll('#deleteList input[type="checkbox"]')) cb.checked = true;
     });
+    if (btnNone) btnNone.addEventListener("click", () => {
+      for (const cb of document.querySelectorAll('#deleteList input[type="checkbox"]')) cb.checked = false;
+    });
+
+    if (btnConfirm) {
+      btnConfirm.addEventListener("click", () => {
+        const checked = Array.from(document.querySelectorAll('#deleteList input[type="checkbox"]:checked'))
+          .map((x) => x.getAttribute("data-key"))
+          .filter(Boolean);
+        if (!checked.length) {
+          alert("請先勾選要刪除的供品。");
+          return;
+        }
+        const ok = confirm(`確定要刪除已勾選的 ${checked.length} 項供品嗎？\n（此操作無法復原）`);
+        if (!ok) return;
+
+        const toDelete = new Set(checked);
+        updateUser((u) => {
+          u.orders = (u.orders || []).map((o) => {
+            const images = (o.images || []).filter((img) => !toDelete.has(`${o.id}::img::${img.id || "img"}`));
+            const items = (o.items || []).filter((it) => !toDelete.has(`${o.id}::item::${it.id || "item"}`));
+            return { ...o, images, items };
+          }).filter((o) => (o.images && o.images.length) || (o.items && o.items.length));
+          return u;
+        });
+
+        renderStation();
+        closeModal();
+      });
+    }
   }
 
   // -------- Boot --------

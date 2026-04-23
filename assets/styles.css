@@ -56,8 +56,12 @@ body{
   inset:0;
   background-image:
     repeating-linear-gradient(90deg, rgba(95,246,214,.06) 0 1px, transparent 1px 46px),
-    repeating-linear-gradient(0deg, rgba(95,246,214,.05) 0 1px, transparent 1px 44px);
-  opacity:.35;
+    repeating-linear-gradient(0deg, rgba(95,246,214,.05) 0 1px, transparent 1px 44px),
+    url("talisman-pattern.svg");
+  background-repeat: repeat, repeat, repeat;
+  background-size: auto, auto, 520px 520px;
+  background-position: 0 0, 0 0, 18px 12px;
+  opacity:.30;
   mix-blend-mode: screen;
 }
 .bg-sigil::after{
@@ -322,6 +326,40 @@ img{ max-width:100%; display:block; }
   position:relative;
 }
 
+/* 分享 QR */
+.share-grid{
+  position: relative;
+  display:grid;
+  grid-template-columns: 1.2fr .8fr;
+  gap: 14px;
+  padding: 14px 16px 16px 16px;
+}
+@media (max-width: 900px){
+  .share-grid{ grid-template-columns: 1fr; }
+}
+.share-text{
+  border-radius: 18px;
+  border: 1px solid rgba(234,247,244,.12);
+  background: rgba(7,10,18,.22);
+  padding: 14px;
+}
+.share-qr{
+  border-radius: 18px;
+  border: 1px solid rgba(95,246,214,.20);
+  background: rgba(7,10,18,.26);
+  padding: 14px;
+  display:grid;
+  place-items:center;
+  box-shadow: 0 0 0 1px rgba(255,122,217,.10) inset, var(--shadowC);
+}
+.share-qr img{
+  width: min(260px, 70vw);
+  height: auto;
+  border-radius: 14px;
+  background: rgba(255,255,255,.98);
+  padding: 10px;
+}
+
 /* 分類按鈕：更大、更像主入口 */
 .cat-tabs .btn{
   padding: 12px 18px;
@@ -431,8 +469,15 @@ img{ max-width:100%; display:block; }
   background: rgba(255,91,205,.10);
   overflow:hidden;
   flex: 0 0 auto;
+  display: grid;
+  place-items: center;
 }
 .thumb img{ width:100%; height:100%; object-fit:cover; }
+.thumb .emoji{
+  font-size: 30px;
+  line-height: 1;
+  filter: drop-shadow(0 6px 10px rgba(0,0,0,.35));
+}
 .item h3{ margin:0; font-size: 14px; }
 .item p{ margin:4px 0 0 0; font-size: 12px; color: rgba(234,247,244,.68); }
 
@@ -485,6 +530,20 @@ img{ max-width:100%; display:block; }
   position:relative;
 }
 .tile img{ width:100%; height: 170px; object-fit:cover; }
+.tile-emoji{
+  height: 170px;
+  display:grid;
+  place-items:center;
+  background:
+    radial-gradient(240px 140px at 50% 0%, rgba(95,246,214,.14), transparent 62%),
+    radial-gradient(240px 140px at 50% 100%, rgba(255,122,217,.12), transparent 62%),
+    rgba(7,10,18,.22);
+}
+.tile-emoji span{
+  font-size: 58px;
+  line-height: 1;
+  filter: drop-shadow(0 14px 22px rgba(0,0,0,.45));
+}
 .tile .cap{
   padding: 10px 12px;
   border-top: 1px solid rgba(234,247,244,.10);
@@ -588,6 +647,98 @@ img{ max-width:100%; display:block; }
   border:0;
 }
 
+/* -------- modal（勾選刪除供品） -------- */
+.modal-overlay{
+  position: fixed;
+  inset: 0;
+  display:none;
+  align-items:center;
+  justify-content:center;
+  padding: 18px;
+  z-index: 1000;
+  backdrop-filter: blur(10px) saturate(1.1);
+  background: rgba(0,0,0,.55);
+}
+.modal-open .modal-overlay{ display:flex; }
+.modal{
+  width: min(720px, 94vw);
+  max-height: min(82vh, 720px);
+  overflow:hidden;
+  border-radius: 18px;
+  border: 1px solid rgba(95,246,214,.20);
+  background: rgba(6,10,18,.72);
+  box-shadow: 0 40px 120px rgba(0,0,0,.55), var(--shadowC);
+  display:flex;
+  flex-direction:column;
+}
+.modal-head{
+  padding: 14px 14px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap: 12px;
+  border-bottom: 1px solid rgba(234,247,244,.10);
+}
+.modal-title{
+  font-weight: 900;
+  letter-spacing: .03em;
+}
+.modal-body{
+  padding: 14px;
+  overflow:auto;
+}
+.modal-foot{
+  padding: 14px;
+  display:flex;
+  justify-content:flex-end;
+  border-top: 1px solid rgba(234,247,244,.10);
+}
+.delete-list{
+  display:grid;
+  gap: 10px;
+}
+.delete-item{
+  display:flex;
+  gap: 12px;
+  align-items:center;
+  border-radius: 16px;
+  border: 1px solid rgba(234,247,244,.12);
+  background: rgba(7,10,18,.30);
+  padding: 12px;
+}
+.delete-item input{ transform: scale(1.15); }
+.delete-thumb{
+  width: 54px;
+  height: 54px;
+  border-radius: 14px;
+  overflow:hidden;
+  border: 1px solid rgba(95,246,214,.16);
+  background: rgba(7,10,18,.22);
+  display:grid;
+  place-items:center;
+  flex: 0 0 auto;
+}
+.delete-thumb img{ width:100%; height:100%; object-fit:cover; }
+.delete-thumb .emoji{ font-size: 28px; line-height: 1; }
+.delete-meta{
+  flex:1;
+  min-width: 0;
+}
+.delete-meta .t{
+  font-weight: 900;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.delete-meta .s{
+  margin-top: 4px;
+  font-size: 12px;
+  color: rgba(234,247,244,.70);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 /* -------- 焚化動畫（結算確認後） -------- */
 .burn-overlay{
   position: fixed;
@@ -609,6 +760,23 @@ img{ max-width:100%; display:block; }
   display:grid;
   place-items:center;
 }
+.burn-canvas{
+  position:absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: 18px;
+  opacity: 0;
+  transform: translateY(10px) scale(.98);
+  filter: drop-shadow(0 28px 70px rgba(0,0,0,.55));
+}
+.burning.phase-burn .burn-canvas{
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+.burning:not(.phase-burn) .burn-canvas{
+  opacity: 0;
+}
 .burn-message{
   width: min(520px, 84vw);
   padding: 18px 18px;
@@ -620,11 +788,18 @@ img{ max-width:100%; display:block; }
   opacity: 0;
   transform: translateY(10px) scale(.98);
 }
+.burn-message{
+  position:relative;
+  z-index:1;
+}
 .burning .burn-message{
   /* 出現後停留約 2~3 秒，再以消散淡出離場 */
   animation:
     burnMessageIn .42s ease-out forwards,
     burnMessageDissolve .90s ease-in forwards 2.25s;
+}
+.burning.phase-burn .burn-message{
+  display:none;
 }
 .burn-kicker{
   font-size: 12px;
@@ -651,4 +826,5 @@ img{ max-width:100%; display:block; }
   65%{ opacity:.55; transform: translateY(-10px) scale(.995); filter: blur(.6px); }
   100%{ opacity:0; transform: translateY(-22px) scale(.985); filter: blur(1.4px); }
 }
+
 
