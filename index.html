@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#0BE6C6" />
+    <meta name="description" content="燒了嗎：虛擬燒紙應用（全站繁體）。下單、結算、個人空間與冥界空間站。" />
+    <title>燒了嗎｜首頁</title>
+    <link rel="manifest" href="site.webmanifest" />
+    <link rel="icon" href="assets/icon.png" />
+    <link rel="apple-touch-icon" href="assets/icon.png" />
+    <link rel="stylesheet" href="assets/styles.css" />
+  </head>
+  <body data-page="home">
+    <div class="bg-sigil" aria-hidden="true"></div>
+
+    <header class="topbar">
+      <div class="container topbar-inner">
+        <a class="brand" href="index.html" aria-label="回到首頁">
+          <img class="brand-icon" src="assets/icon.png" alt="" aria-hidden="true" />
+          <div>
+            <div class="brand-title">燒了嗎</div>
+            <div class="kicker">虛擬燒紙 · 霓虹符紋</div>
+          </div>
+        </a>
+
+        <nav class="nav" aria-label="主選單">
+          <a href="index.html">主頁</a>
+          <a href="space.html">個人空間</a>
+        </nav>
+      </div>
+    </header>
+
+    <main class="container">
+      <section class="grid home-grid" aria-label="首頁主區塊">
+        <!-- 左：下單區域（依照你圖一/二位置） -->
+        <div class="panel">
+          <div class="panel-inner">
+            <div class="panel-titlebar">傳遞思念，直至永恆</div>
+
+            <div class="row" style="margin-top:12px">
+              <a id="goOrder" class="btn btn-primary" href="order.html">購物入口</a>
+              <a id="goBurn" class="btn" href="checkout.html">焚化入口</a>
+            </div>
+
+            <div class="upload-box" style="margin-top:12px">
+              <div class="hint">（上傳圖片）</div>
+              <div class="plus" aria-hidden="true">＋</div>
+              <div id="uploadPreview" class="upload-preview" aria-hidden="true">
+                <img id="uploadPreviewImg" alt="已上傳圖片預覽" />
+              </div>
+              <input id="uploadInput" type="file" accept="image/*" aria-label="上傳供品圖片" />
+            </div>
+
+            <div class="row" style="margin-top:12px; justify-content:flex-end">
+              <button id="quickSend" class="btn btn-ghost" type="button">快速投遞</button>
+              <button id="nextStep" class="btn btn-primary" type="button">下一步</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 右：冥界空間站（依照你圖一/二位置） -->
+        <div class="panel right-station">
+          <div class="panel-inner">
+            <div class="station-head">冥界空間站</div>
+            <div class="station-sub">（內分個人與公開）</div>
+
+            <div class="station-cta">
+              <button id="goStation" class="btn btn-primary" type="button">進入空間站</button>
+              <a class="btn" href="station.html#public">查看公開區</a>
+            </div>
+
+            <div style="margin-top:14px" class="empty station-lotus">
+              <img class="station-lotus-bg" src="assets/lotus_full.png" alt="" aria-hidden="true" />
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 底部：推薦套裝（依照你圖一/二位置） -->
+      <section class="footer-strip" aria-label="推薦套裝">
+        <div class="title">推薦套裝：</div>
+        <div id="recommended" class="cards"></div>
+      </section>
+    </main>
+
+    <script defer src="assets/app.bundle.js"></script>
+  </body>
+</html>
+
